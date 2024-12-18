@@ -109,7 +109,7 @@ type UIProps = {
 
 function UI({ appState, numTouches, onTouch }: UIProps) {
   return (
-    <div className="h-screen" onMouseDownCapture={onTouch}>
+    <div className="w-screen h-screen" onMouseDownCapture={onTouch}>
       <h1 className="p-10 text-2xl text-center">テンポをキープするやつ！</h1>
       <figure>
         <figcaption className="pb-1 text-center">ルール</figcaption>
@@ -146,6 +146,9 @@ function UI({ appState, numTouches, onTouch }: UIProps) {
           <></>
         )}
       </div>
+      <footer className="absolute bottom-0 w-full p-5 text-center text-xs text-blue-600">
+        <a href="https://github.com/hashedhyphen/tempo-test">GitHub Repo</a>
+      </footer>
     </div>
   )
 }
