@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     creator: "@hashedhyphen",
   },
   openGraph: {
-    url: "https://tempo-test.vercel.app/",
+    url: "https://tempo-test-128.vercel.app/",
     title: "テンポをキープするやつ！",
     images:
       "https://raw.githubusercontent.com/hashedhyphen/tempo-test/master/public/logo.png",
