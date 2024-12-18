@@ -1,101 +1,144 @@
-import Image from "next/image";
+"use client"
+
+import Image from "next/image"
+import ruleImg from "../public/rule.png"
+import { MouseEventHandler, useState } from "react"
+
+type AppState = "IDLE" | "READY" | "TESTING"
+
+const TEMPO = 128 // M.M.
+const TEMPO_MS = (60 / TEMPO) * 1000
+const BEATS_PER_BAR = 4
+const NUM_TRIALS = 4
+
+class CountInTimer {
+  gainNode: GainNode
+
+  constructor() {
+    const audioCtx = new AudioContext()
+    const oscillator = audioCtx.createOscillator()
+    const gainNode = audioCtx.createGain()
+
+    oscillator.frequency.value = 440
+    gainNode.gain.value = 0
+    oscillator.connect(gainNode).connect(oscillator.context.destination)
+    oscillator.start()
+
+    this.gainNode = gainNode
+  }
+
+  run() {
+    this.#beep()
+    let n = 1
+    const intervalId = setInterval(() => {
+      if (n === BEATS_PER_BAR) {
+        return clearInterval(intervalId)
+      }
+      n += 1
+      this.#beep()
+    }, TEMPO_MS)
+  }
+
+  #beep() {
+    this.gainNode.gain.value = 1
+    setTimeout(() => {
+      this.gainNode.gain.value = 0
+    }, 50)
+  }
+}
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [appState, setAppState] = useState<AppState>("IDLE")
+  const [times, setTimes] = useState<number[]>([])
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+  if (times.length === NUM_TRIALS) {
+    showResults()
+  }
+
+  function handleTouch() {
+    if (appState === "IDLE") {
+      setAppState("READY")
+      const timer = new CountInTimer()
+      setTimeout(() => {
+        timer.run()
+        setAppState("TESTING")
+      }, 2000)
+      return
+    }
+    if (appState === "TESTING") {
+      setTimes([...times, performance.now()])
+    }
+  }
+
+  function showResults() {
+    let lines: string[] = []
+    let diffSum = 0
+    for (let i = 1; i < times.length; i += 1) {
+      const diffMs = Math.round(
+        times[i] - times[i - 1] - BEATS_PER_BAR * TEMPO_MS,
+      )
+      lines = [
+        ...lines,
+        `${i}~${i + 1}: ${Math.abs(diffMs)}ms ${diffMs > 0 ? "長い" : diffMs < 0 ? "短い" : "ピッタリ"}`,
+      ]
+      diffSum += Math.abs(diffMs)
+    }
+
+    const text = `今日のテンポ: BPM ${TEMPO}\n${lines.join("\n")}\n誤差合計: ${diffSum}ms`
+    const url = window.location.href.split("?")[0]
+    const hashtags = "テンポをキープするやつ"
+
+    const usp = new URLSearchParams()
+    usp.set("text", text)
+    usp.set("url", url)
+    usp.set("hashtags", hashtags)
+
+    window.location.href = `https://twitter.com/intent/tweet?${usp}`
+  }
+
+  return (
+    <UI appState={appState} numTouches={times.length} onTouch={handleTouch} />
+  )
+}
+
+type UIProps = {
+  appState: AppState
+  numTouches: number
+  onTouch: MouseEventHandler
+}
+
+function UI({ appState, numTouches, onTouch }: UIProps) {
+  return (
+    <div className="h-screen" onMouseDownCapture={onTouch}>
+      <h1 className="p-10 text-2xl text-center">テンポをキープするやつ！</h1>
+      <figure>
+        <figcaption className="pb-1 text-center">ルール</figcaption>
+        <Image
+          src={ruleImg}
+          alt="ルール：始めに4拍ビープ音が鳴るので、それと同じテンポで1拍目だけ画面をタップする動作を4小節繰り返してください。"
+          sizes="(max-width: 768px) 100vw, 768px"
+        />
+      </figure>
+      <div className="p-10">
+        <p className="text-center">今日のテンポ</p>
+        <p className="text-center text-lg">BPM {TEMPO}</p>
+      </div>
+      <div>
+        {appState === "IDLE" ? (
+          <>
+            <p className="text-center text-lg">画面タップでスタート</p>
+            <p className="text-center text-xs">
+              ※消音モードをオフにしてください
+            </p>
+          </>
+        ) : appState === "READY" ? (
+          <p className="text-center text-lg">READY?</p>
+        ) : numTouches > 0 ? (
+          <p className="text-center">{numTouches}</p>
+        ) : (
+          <></>
+        )}
+      </div>
     </div>
-  );
+  )
 }
