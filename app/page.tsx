@@ -134,7 +134,14 @@ function UI({ appState, numTouches, onTouch }: UIProps) {
         ) : appState === "READY" ? (
           <p className="text-center text-lg">READY?</p>
         ) : numTouches > 0 ? (
-          <p className="text-center">{numTouches}</p>
+          <>
+            <p className="text-center">{numTouches}</p>
+            {numTouches === NUM_TRIALS ? (
+              <p className="text-center">画面リロードで再テスト</p>
+            ) : (
+              <></>
+            )}
+          </>
         ) : (
           <></>
         )}
