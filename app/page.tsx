@@ -7,9 +7,16 @@ import { MouseEventHandler, useState } from "react"
 type AppState = "IDLE" | "READY" | "TESTING"
 
 const TEMPO = 128 // M.M.
-const TEMPO_MS = (60 / TEMPO) * 1000
+const TEMPO_MS = tempoToMs(TEMPO)
 const BEATS_PER_BAR = 4
 const NUM_TRIALS = 4
+
+function tempoToMs(tempo: number): number {
+  return (60 / tempo) * 1000
+}
+function msToTempo(ms: number): number {
+  return (1000 / ms) * 60
+}
 
 class CountInTimer {
   gainNode: GainNode
@@ -74,13 +81,15 @@ export default function Home() {
     let lines: string[] = []
     let diffSum = 0
     for (let i = 1; i < times.length; i += 1) {
-      const diffMs = Math.round(
-        times[i] - times[i - 1] - BEATS_PER_BAR * TEMPO_MS,
-      )
-      lines = [
-        ...lines,
-        `${i}~${i + 1}: ${Math.abs(diffMs)}ms ${diffMs > 0 ? "長い" : diffMs < 0 ? "短い" : "ピッタリ"}`,
-      ]
+      const duration = times[i] - times[i - 1]
+
+      const diffMs = Math.round(duration - BEATS_PER_BAR * TEMPO_MS)
+      const diffMsText = `${Math.abs(diffMs)}ms ${diffMs > 0 ? "長い" : diffMs < 0 ? "短い" : "ピッタリ"}`
+
+      const diffTempo = Math.round(msToTempo(duration / BEATS_PER_BAR) - TEMPO)
+      const diffTempoText = `BPM ${diffTempo > 0 ? "+" : diffTempo < 0 ? "-" : "±"}${Math.abs(diffTempo)}`
+
+      lines = [...lines, `${i}~${i + 1}: ${diffMsText} (${diffTempoText})`]
       diffSum += Math.abs(diffMs)
     }
 
